@@ -46,7 +46,8 @@ pursuitQuality = ownership_location_values %>%
   group_by(gameId, playId, nflId) %>%
   mutate(lagInfluence = lag(influence)) %>%
   mutate(influenceGained = influence - lagInfluence,
-         pursuitQuality = opponentOwnershipPercentNextLoc*influenceGained,
+         pursuitQuality = ifelse(influenceGained < 0, influenceGained*(1-opponentOwnershipPercentNextLoc), opponentOwnershipPercentNextLoc*influenceGained),
+           #opponentOwnershipPercentNextLoc*influenceGained,
          cumulativePursuitQuality = cumsum(replace_na(pursuitQuality, 0)),
          startEvent = event[frameId == 6]) %>%
   filter(!is.na(pursuitQuality))

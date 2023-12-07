@@ -238,7 +238,7 @@ animate_play = function(game, play){
   # 
   # ## Ensure timing of play matches 10 frames-per-second
   play.length.ex <- length(unique(single_play$frameId))
-  animate(animate_play, fps = 10, nframe = play.length.ex, res = 150)
+  animate(animate_play, fps = 10, nframe = play.length.ex, res = 150, renderer = magick_renderer())
 }
 
 play = animate_play(2022091500, 3350)
@@ -248,10 +248,10 @@ x = plays %>% filter(defensiveTeam == "LAC") %>%
   group_by(playId) %>%
   filter(sum(pff_missedTackle) >= 1, !is.na(passResult))
 
-magick::image_write(
-  animate(gif, width = 1000, height = 1000), 
-  "DEN_LAC_Play.gif"
-)
+# magick::image_write(
+#   animate(gif, width = 1000, height = 1000), 
+#   "DEN_LAC_Play.gif"
+# )
 
 track_SO = function(game, play, ids){
   pull_influence = calculateInfluence %>%
@@ -267,7 +267,7 @@ track_SO = function(game, play, ids){
   
   
   play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId)
-  animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150)
+  animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150, renderer = magick_renderer())
   
 }
 
@@ -287,7 +287,7 @@ track_diff = function(game, play, ids){
   
   
   play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId)
-  animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150)
+  animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150, renderer = magick_renderer())
   
 }
 
@@ -307,7 +307,7 @@ track_PQ = function(game, play, ids){
   
   
   play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId)
-  animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150)
+  animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150, renderer = magick_renderer())
   
 }
 
@@ -331,23 +331,23 @@ for(i in 2:length(p2Gif)){
 
 newGif
 
-pull_influence = calculateInfluence %>%
-  filter(gameId == 2022091500, playId == 3350,
-         nflId %in% c(46775, 46086), frameId > min(frameId)) %>%
-  select(gameId, playId, frameId, nflId, displayName, percentOwnership) %>%
-  left_join(pursuitQuality %>% select(gameId, playId, frameId, nflId, displayName, opponentOwnershipPercentNextLoc,
-                                      cumulativePursuitQuality))
-  
-p1 = ggplot(pull_influence, aes(frameId, percentOwnership, color = displayName)) +
-  geom_line() +
-  theme_bw()
-
-p2 = ggplot(pull_influence, aes(frameId, opponentOwnershipPercentNextLoc, color = displayName)) +
-  geom_line() +
-  theme_bw()
-
-patchwork::
-
-x = calculateInfluence %>%
-  filter(gameId == 2022091500, playId == 3350) %>%
-  select(gameId, playId, frameId, nflId, isOffense, percentOwnership)
+# pull_influence = calculateInfluence %>%
+#   filter(gameId == 2022091500, playId == 3350,
+#          nflId %in% c(46775, 46086), frameId > min(frameId)) %>%
+#   select(gameId, playId, frameId, nflId, displayName, percentOwnership) %>%
+#   left_join(pursuitQuality %>% select(gameId, playId, frameId, nflId, displayName, opponentOwnershipPercentNextLoc,
+#                                       cumulativePursuitQuality))
+#   
+# p1 = ggplot(pull_influence, aes(frameId, percentOwnership, color = displayName)) +
+#   geom_line() +
+#   theme_bw()
+# 
+# p2 = ggplot(pull_influence, aes(frameId, opponentOwnershipPercentNextLoc, color = displayName)) +
+#   geom_line() +
+#   theme_bw()
+# 
+# patchwork::
+# 
+# x = calculateInfluence %>%
+#   filter(gameId == 2022091500, playId == 3350) %>%
+#   select(gameId, playId, frameId, nflId, isOffense, percentOwnership)
