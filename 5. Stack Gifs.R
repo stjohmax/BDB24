@@ -111,9 +111,7 @@ track_SO = function(game, play, ids){
     theme_bw() +
     transition_reveal(frameId) +
     theme(
-      legend.position = c(.3, .75),
-      legend.box.background = element_rect(colour = "black"),
-      legend.key.height = unit(.1, 'in'),
+      legend.position = "none",
       axis.title = element_text(size = rel(.8)),
           axis.text = element_text(size = rel(.8)),
           panel.grid.minor = element_blank()) +
@@ -162,7 +160,9 @@ track_PQ = function(game, play, ids){
     geom_line() +
     theme_bw() +
     transition_reveal(frameId) +
-    theme(legend.position = "none", axis.title = element_text(size = rel(.8)),
+    theme(legend.position = c(.3, .75),
+          legend.box.background = element_rect(colour = "black"),
+          legend.key.height = unit(.1, 'in'), axis.title = element_text(size = rel(.8)),
           axis.text = element_text(size = rel(.8)),
           panel.grid.minor = element_blank()) +
     ylab("Cumulative Pursuit Quality") +
@@ -177,11 +177,11 @@ track_PQ = function(game, play, ids){
 #blank_image = image_blank(width = 50, height = 200, color = "white")
 
 
-play_gif = rotate_animate_play(2022091500, 3350, c(46775, 46086))
+play_gif = rotate_animate_play(2022092510, 3356, c(49410, 52945))
 
-p1 = track_SO(2022091500, 3350, c(46775, 46086))
-p2 = track_diff(2022091500, 3350, c(46775, 46086))
-p3 = track_PQ(2022091500, 3350, c(46775, 46086))
+p1 = track_SO(2022092510, 3356, c(49410, 52945))
+p2 = track_diff(2022092510, 3356, c(49410, 52945))
+p3 = track_PQ(2022092510, 3356, c(49410, 52945))
 
 
 plots_combined = image_append(c(p1[1], p2[1], p3[1]))

@@ -41,11 +41,11 @@ ownership_location_values = ownership_location_values %>%
   select(gameId, playId, frameId, nflId, displayName, x:spaceGainedValue)
 
 pursuitQuality = ownership_location_values %>%
-  select(gameId:event, dis, influence, opponentOwnershipPercentNextLoc) %>%
+  select(gameId:event, dis, percentOwnership, opponentOwnershipPercentNextLoc) %>%
   arrange(frameId) %>%
   group_by(gameId, playId, nflId) %>%
-  mutate(lagInfluence = lag(influence)) %>%
-  mutate(influenceGained = influence - lagInfluence,
+  mutate(lagInfluence = lag(percentOwnership)) %>%
+  mutate(influenceGained = percentOwnership - lagInfluence,
          pursuitQuality = ifelse(influenceGained < 0, influenceGained*(1-opponentOwnershipPercentNextLoc), opponentOwnershipPercentNextLoc*influenceGained),
            #opponentOwnershipPercentNextLoc*influenceGained,
          cumulativePursuitQuality = cumsum(replace_na(pursuitQuality, 0)),
@@ -149,31 +149,6 @@ ggplot(compareMissedTackle %>% filter(result != "Other"), aes(lostPursuitQuality
 
 colorsLogos = nflfastR::teams_colors_logos %>%
   select(team_abbr, team_color, team_color2, team_logo_wikipedia)
-
-finalPursuitQuality = pursuitQuality %>%
-  group_by(gameId, playId) %>%
-  filter(frameId == max(frameId)) %>%
-  left_join(plays %>% select(gameId, playId, quarter, gameClock, defensiveTeam)) %>%
-  mutate(timeElapsed = (15 - (hour(gameClock) + minute(gameClock)/60)) + 15*(quarter - 1)) %>%
-  left_join(games %>% select(gameId, week)) %>%
-  mutate(timeOrder = week*120 + timeElapsed) %>%
-  ungroup() %>%
-  group_by(nflId) %>%
-  arrange(timeOrder) %>%
-  mutate(snapNumber = 1:n(),
-         seasonLongCumPQ = cumsum(cumulativePursuitQuality)) %>%
-  left_join(players %>% select(nflId, displayName, position)) %>%
-  filter(max(snapNumber) >= 100) %>%
-  left_join(tackles) %>%
-  mutate(tackleResult = case_when(
-    pff_missedTackle == 1 ~ "Missed Tackle",
-    forcedFumble == 1 ~ "Forced Fumble",
-    tackle == 1 ~ "Tackle",
-    assist == 1 ~ "Assist",
-    .default = NA
-  )) %>%
-  left_join(colorsLogos,
-            by = c("defensiveTeam" = "team_abbr"))
   
 
 x = data %>%

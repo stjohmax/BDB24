@@ -48,8 +48,8 @@ pqFacet = ggplot(pursuitQualitySummaryWider, aes(`Run PQ per Second`, `Pass PQ p
   # geom_image(aes(image = team_logo_wikipedia), size = 0.04, by = "width", asp = 1.618) +
   geom_vline(xintercept = mean(pursuitQualitySummaryWider$`Run PQ per Second`)) +
   geom_hline(yintercept = mean(pursuitQualitySummaryWider$`Pass PQ per Second`)) +
-  xlim(0, .1) +
-  ylim(0, .1) +
+  # xlim(0, .1) +
+  # ylim(0, .1) +
   facet_wrap(~ Position) +
   theme_bw() +
   theme(legend.position = "none")

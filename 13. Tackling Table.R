@@ -1,25 +1,12 @@
-library(kableExtra)
-library(DT)
-library(webshot2)
-library(htmltools)
-library(gt)
-library(gtExtras)
-library(gridExtra)
-library(png)
-library(patchwork)
-library(cowplot)
-library(gtsummary)
-
-
 # Code from https://github.com/husarah/big-data-bowl-2022/blob/master/scripts/viz.R
-pursuitCompositePosTable = function(pos){
+tacklingCompositePosTable = function(pos){
   data = playerPursuitTacklingSummary %>%
     ungroup() %>%
     filter(position == pos) %>%
-    arrange(-pqGainedPerPursuit) %>%
-    select(Name = displayName, Team = team_logo_wikipedia, 'Pursuit Score' = pqGainedPerPursuit, Pursuits=pursuits, Tackles = totalTackles) %>%
-    mutate(`Pursuit Score` = round(`Pursuit Score`, 3)) %>%
-  head(5)
+    arrange(valueLostPerOpp) %>%
+    select(Name = displayName, Team = team_logo_wikipedia, 'Tackling Score' = valueLostPerOpp, Snaps=snaps, Tackles = totalTackles) %>%
+    mutate(`Tackling Score` = round(`Tackling Score`, 3)) %>%
+    head(5)
   
   titleString = paste0("**Top 5 ", pos, "**")
   
@@ -27,11 +14,11 @@ pursuitCompositePosTable = function(pos){
     gt() %>%
     tab_header(title = md(titleString)) %>%
     data_color(
-      columns = vars('Pursuit Score'),
+      columns = vars('Tackling Score'),
       colors = scales::col_numeric(
         palette = "Blues",
-        #palette = c('#d0e6ea', '#c6e0e5', '#bddbe1', '#b3d6dd', '#aad1d8', '#a0ccd4', '#90b8bf', '#80a3aa', '#708f94', '#607a7f'),
-        domain = c(0.01, .05)
+        #palette = rev(c('#d0e6ea', '#c6e0e5', '#bddbe1', '#b3d6dd', '#aad1d8', '#a0ccd4', '#90b8bf', '#80a3aa', '#708f94', '#607a7f')),
+        domain = c(0, .1)
       )
     ) %>%
     tab_options(
@@ -48,18 +35,17 @@ pursuitCompositePosTable = function(pos){
     cols_align(align = 'center',
                columns = everything()) %>%
     gt_img_rows(Team) %>%
-    cols_width(Name ~ px(175),
-               `Pursuit Score` ~ px(50))
-  }
+    cols_width(Name ~ px(175))
+}
 
 
 
-table1 = pursuitCompositePosTable('CB')
-table2 = pursuitCompositePosTable('DE')
-table3 = pursuitCompositePosTable('OLB')
-table4 = pursuitCompositePosTable("S")
-table5 = pursuitCompositePosTable("IDL")
-table6 = pursuitCompositePosTable("ILB")
+table1 = tacklingCompositePosTable('CB')
+table2 = tacklingCompositePosTable('DE')
+table3 = tacklingCompositePosTable('OLB')
+table4 = tacklingCompositePosTable("S")
+table5 = tacklingCompositePosTable("IDL")
+table6 = tacklingCompositePosTable("ILB")
 
 combined_html <- tagList(
   tags$style(
