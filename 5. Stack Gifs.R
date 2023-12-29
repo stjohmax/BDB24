@@ -98,17 +98,45 @@ animate(animate_play, fps = 10, nframe = play.length.ex, height = 4, width = 9, 
 
 }
 
+
 track_SO = function(game, play, ids){
+  # player1 = returnPlayerName(ids[1])
+  # player2 = returnPlayerName(ids[2])
+  # colors = c(player1 = "darkblue", player2 = "lightblue")
   pull_influence = calculateInfluence %>%
-    filter(gameId == game, playId == play,
-           nflId %in% ids) %>%
-    mutate(Player = ifelse(nchar(jerseyNumber) == 1, paste0(jerseyNumber, "  ", displayName), 
-                           paste0(jerseyNumber, " ", displayName))) %>%
-    select(gameId, playId, frameId, nflId, Player, percentOwnership)
+    filter(gameId == 2022091500, playId == 3350,
+           nflId %in% c(46086, 46775)) %>%
+    # filter(gameId == game, playId == play,
+    #        nflId %in% ids) %>%
+    select(gameId, playId, frameId, nflId, displayName, percentOwnership) %>%
+    left_join(pursuitQuality %>% select(gameId, playId, frameId, nflId, displayName, opponentOwnershipPercentNextLoc,
+                                        cumulativePursuitQuality))
   
-  anim = ggplot(pull_influence, aes(frameId, percentOwnership, color = Player)) +
-    geom_line() +
+  lastFrames = pull_influence %>%
+    group_by(nflId) %>%
+    summarise(finalFrame = frameId[percentOwnership == max(percentOwnership)],
+              maxOwnership = max(percentOwnership))
+  
+  influenceBeforePeak = pull_influence %>%
+    left_join(lastFrames) %>%
+    mutate(lt = case_when(
+      frameId > finalFrame ~ "solid",
+      .default = "dashed"),
+      dotX = case_when(
+        frameId >= finalFrame ~ finalFrame,
+        .default = NA
+      ),
+      dotY = case_when(
+        frameId >= finalFrame ~ maxOwnership,
+        .default = NA
+      ))
+  
+  anim = ggplot(influenceBeforePeak, aes(frameId, percentOwnership, group = displayName)) +
+    geom_line(aes(linetype = lt)) +
+    geom_point(aes(dotX, dotY), size=2) +
     theme_bw() +
+    scale_linetype_identity() +
+    scale_color_manual(values = c("darkblue", "lightblue")) + 
     transition_reveal(frameId) +
     theme(
       legend.position = "none",
@@ -119,21 +147,34 @@ track_SO = function(game, play, ids){
     ylim(-.1, 1)
   
   
-  play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId)
+  play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId) + 1
   animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150, renderer = magick_renderer())
   
 }
 
 track_diff = function(game, play, ids){
   pull_influence = calculateInfluence %>%
-    filter(gameId == game, playId == play,
-           nflId %in% ids) %>%
+    filter(gameId == 2022091500, playId == 3350,
+           nflId %in% c(46086, 46775)) %>%
+    # filter(gameId == game, playId == play,
+    #        nflId %in% ids) %>%
     select(gameId, playId, frameId, nflId, displayName, percentOwnership) %>%
     left_join(pursuitQuality %>% select(gameId, playId, frameId, nflId, displayName, opponentOwnershipPercentNextLoc,
                                         cumulativePursuitQuality))
   
-  anim = ggplot(pull_influence, aes(frameId, opponentOwnershipPercentNextLoc, color = displayName)) +
-    geom_line() +
+  lastFrames = pull_influence %>%
+    group_by(nflId) %>%
+    summarise(finalFrame = frameId[percentOwnership == max(percentOwnership)])
+  
+  influenceBeforePeak = pull_influence %>%
+    left_join(lastFrames) %>%
+    mutate(lt = case_when(
+      frameId > finalFrame ~ 1,
+      .default = 2))
+  
+  anim = ggplot(influenceBeforePeak, aes(frameId, percentOwnership, color = displayName)) +
+    scale_linetype_identity() +
+    geom_line(aes(linetype = lt)) +
     theme_bw() +
     transition_reveal(frameId) +
     theme(legend.position = "none", axis.title = element_text(size = rel(.8)),
@@ -143,7 +184,7 @@ track_diff = function(game, play, ids){
     ylim(-.1, 1)
   
   
-  play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId)
+  play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId) + 1
   animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150, renderer = magick_renderer())
   
 }
@@ -152,12 +193,39 @@ track_PQ = function(game, play, ids){
   pull_influence = calculateInfluence %>%
     filter(gameId == game, playId == play,
            nflId %in% ids) %>%
+    # filter(gameId == 2022091500, playId == 3350,
+    #        nflId %in% c(46086, 46775)) %>%
     select(gameId, playId, frameId, nflId, displayName, percentOwnership) %>%
     left_join(pursuitQuality %>% select(gameId, playId, frameId, nflId, displayName, opponentOwnershipPercentNextLoc,
                                         cumulativePursuitQuality))
   
-  anim = ggplot(pull_influence, aes(frameId, cumulativePursuitQuality, color = displayName)) +
+  lastFrames = pull_influence %>%
+    group_by(nflId) %>%
+    summarise(finalFrame = frameId[percentOwnership == max(percentOwnership)],
+              pqPeakOwnership = cumulativePursuitQuality[frameId == finalFrame])
+  
+  influenceBeforePeak = pull_influence %>%
+    left_join(lastFrames) %>%
+    mutate(cumulativePursuitQuality = case_when(
+      frameId > finalFrame ~ NA,
+      .default = cumulativePursuitQuality),
+      dotX = case_when(
+        frameId >= finalFrame ~ finalFrame,
+        .default = frameId
+      ),
+      dotY = case_when(
+        frameId >= finalFrame ~ pqPeakOwnership,
+        .default = cumulativePursuitQuality
+      ))
+
+
+  
+  
+  anim = ggplot(influenceBeforePeak, aes(frameId, cumulativePursuitQuality, color = displayName)) +
     geom_line() +
+    geom_point(aes(x = dotX, y = dotY), size = 2) +
+    geom_text(aes(label = frameId, x = 42.5, y = .85)) +
+    #geom_point(data = dotPoints, aes(frameId, cumulativePursuitQuality, color = displayName), size = 2)
     theme_bw() +
     transition_reveal(frameId) +
     theme(legend.position = c(.3, .75),
@@ -169,7 +237,8 @@ track_PQ = function(game, play, ids){
     ylim(-.1, 1)
   
   
-  play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId)
+  
+  play.length.ex <- max(pull_influence$frameId) - min(pull_influence$frameId) + 1
   animate(anim, fps = 10, nframe = play.length.ex, height = 2, width = 3, units = "in", res = 150, renderer = magick_renderer())
   
 }
@@ -177,11 +246,11 @@ track_PQ = function(game, play, ids){
 #blank_image = image_blank(width = 50, height = 200, color = "white")
 
 
-play_gif = rotate_animate_play(2022092510, 3356, c(49410, 52945))
+play_gif = rotate_animate_play(2022091500, 3350, c(46086, 46775))
 
-p1 = track_SO(2022092510, 3356, c(49410, 52945))
-p2 = track_diff(2022092510, 3356, c(49410, 52945))
-p3 = track_PQ(2022092510, 3356, c(49410, 52945))
+p1 = track_SO(2022091500, 3350, c(46086, 46775))
+p2 = track_diff(2022091500, 3350, c(46086, 46775))
+p3 = track_PQ(2022091500, 3350, c(46086, 46775))
 
 
 plots_combined = image_append(c(p1[1], p2[1], p3[1]))
@@ -197,4 +266,4 @@ for(i in 2:length(p2)){
 
 new_gif
 
-anim_save('Full Play.gif', new_gif)
+anim_save('Test PQ Frames.gif', p1)

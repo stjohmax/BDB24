@@ -1,7 +1,23 @@
 library(gganimate)
 library(transformr)
 library(magick)
-#2022092510, 3356
+library(kableExtra)
+library(DT)
+library(webshot2)
+library(htmltools)
+library(gt)
+library(gtExtras)
+library(gridExtra)
+library(png)
+library(patchwork)
+library(cowplot)
+library(gtsummary)
+library(plotly)
+library(ggimage)
+
+
+
+### SO + Path Difficulty GIF ###
 start_frames_function = function(game, play, tacklerId, pauseFrame1, pauseFrame2){
   
   pull_influence = calculateInfluence %>%
@@ -184,7 +200,201 @@ start_frames_function = function(game, play, tacklerId, pauseFrame1, pauseFrame2
 }
 
 start = start_frames_function(2022092510, 3356, 49410, 35, 40)
-start
 
 anim_save('Full Play Metric Description.gif', start)
+
+### Pass vs Rush PQ by Position Scatterplot ###
+ggplot(pursuitQualitySummary, aes(Run, Pass, fill = position, color = position)) +
+  geom_point() +
+  geom_label(data = positionMidpoints, aes(color = position, label = position), fill = "white") +
+  theme_bw() +
+  xlab("Run PQ") +
+  ylab("Pass PQ") +
+  ggtitle("Pass vs Run PQ by Position") +
+  theme(legend.position = "none",
+        axis.title.x = element_text(hjust = .5),
+        axis.title.y = element_text(hjust = .5),
+        plot.title = element_text(face = "bold", hjust = 0.5))
+
+### Top 5 PQ by Position Table ###
+
+pursuitCompositePosTable = function(pos){
+  data = pursuitComposite %>%
+    ungroup() %>%
+    filter(position == pos) %>%
+    arrange(-pursuitComposite) %>%
+    select(Name = displayName, Team = team_logo_wikipedia, 'Pursuit Score' = pursuitComposite, Snaps = snapCount,
+           "Pursuit Opportunities" = pursuitOpps) %>%
+    mutate(`Pursuit Score` = round(`Pursuit Score`, 3)) %>%
+    head(5)
+  
+  titleString = paste0("**Top 5 ", pos, "**")
+  
+  data %>%
+    gt() %>%
+    tab_header(title = md(titleString)) %>%
+    data_color(
+      columns = vars('Pursuit Score'),
+      colors = scales::col_numeric(
+        palette = "Blues",
+        #palette = c('#d0e6ea', '#c6e0e5', '#bddbe1', '#b3d6dd', '#aad1d8', '#a0ccd4', '#90b8bf', '#80a3aa', '#708f94', '#607a7f'),
+        domain = c(0.01, .05)
+      )
+    ) %>%
+    tab_options(
+      table.border.top.width = 0,
+      table.border.bottom.color = "black",
+      column_labels.border.top.color = "black",
+      column_labels.border.bottom.color = "black",
+      column_labels.border.bottom.width= px(2.5),
+      column_labels.border.top.width = px(2.5),
+      column_labels.font.size = px(18),
+      table.font.size = px(14),
+      heading.title.font.size = px(24)
+    ) %>%
+    cols_align(align = 'center',
+               columns = everything()) %>%
+    gt_img_rows(Team) %>%
+    cols_width(Name ~ px(175),
+               `Pursuit Score` ~ px(50))
+}
+
+
+
+table1 = pursuitCompositePosTable('CB')
+table2 = pursuitCompositePosTable('DE')
+table3 = pursuitCompositePosTable('OLB')
+table4 = pursuitCompositePosTable("S")
+table5 = pursuitCompositePosTable("IDL")
+table6 = pursuitCompositePosTable("ILB")
+
+combined_html <- tagList(
+  tags$style(
+    HTML("
+      .table-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .table {
+        grid-column: span 1;
+        grid-row: span 1;
+      }
+    ")
+  ),
+  div(class = "table-container",
+      div(class = "table", table1),
+      div(class = "table", table2),
+      div(class = "table", table3),
+      div(class = "table", table4),
+      div(class = "table", table5),
+      div(class = "table", table6)
+  )
+)
+
+save_html(combined_html, "combined_tables.html")
+
+
+### Tackling Table ###
+tackleValuePosTable = function(pos){
+  data = pursuitQualityTacklesSummary %>%
+    ungroup() %>%
+    filter(position == pos) %>%
+    arrange(tackleValuePerAttempt) %>%
+    select(Name = displayName, Team = team_logo_wikipedia, 'Tackle Score' = tackleValuePerAttempt, Snaps = snapCount,
+           Tackles = tackles) %>%
+    mutate(`Tackle Score` = round(`Tackle Score`, 3)) %>%
+    head(5)
+  
+  titleString = paste0("**Top 5 ", pos, "**")
+  
+  data %>%
+    gt() %>%
+    tab_header(title = md(titleString)) %>%
+    data_color(
+      columns = vars('Tackle Score'),
+      colors = scales::col_numeric(
+        palette = "Blues",
+        #palette = c('#d0e6ea', '#c6e0e5', '#bddbe1', '#b3d6dd', '#aad1d8', '#a0ccd4', '#90b8bf', '#80a3aa', '#708f94', '#607a7f'),
+        domain = c(.0004, .03),
+        reverse = TRUE
+      )
+    ) %>%
+    tab_options(
+      table.border.top.width = 0,
+      table.border.bottom.color = "black",
+      column_labels.border.top.color = "black",
+      column_labels.border.bottom.color = "black",
+      column_labels.border.bottom.width= px(2.5),
+      column_labels.border.top.width = px(2.5),
+      column_labels.font.size = px(18),
+      table.font.size = px(14),
+      heading.title.font.size = px(24)
+    ) %>%
+    cols_align(align = 'center',
+               columns = everything()) %>%
+    gt_img_rows(Team) %>%
+    cols_width(Name ~ px(175),
+               `Tackle Score` ~ px(50))
+}
+
+
+
+table1 = tackleValuePosTable('CB')
+table2 = tackleValuePosTable('DE')
+table3 = tackleValuePosTable('OLB')
+table4 = tackleValuePosTable("S")
+table5 = tackleValuePosTable("IDL")
+table6 = tackleValuePosTable("ILB")
+
+combined_html <- tagList(
+  tags$style(
+    HTML("
+      .table-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .table {
+        grid-column: span 1;
+        grid-row: span 1;
+      }
+    ")
+  ),
+  div(class = "table-container",
+      div(class = "table", table1),
+      div(class = "table", table2),
+      div(class = "table", table3),
+      div(class = "table", table4),
+      div(class = "table", table5),
+      div(class = "table", table6)
+  )
+)
+
+save_html(combined_html, "combined_tables.html")
+
+### Tackle Event Boxplot ###
+ggplot(tacklePlaySummary, aes(tackleValue, tackleResult, fill = tackleResult)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(legend.position = "none")
+
+### Tackling vs Pursuit ###
+tackleVsPursuitFacet = ggplot(pursuitQualityTacklesSummary, aes(pursuitComposite, tackleValuePerAttempt, 
+                                                 label = displayName, group = defensiveTeam)) +
+  geom_point(aes(fill = team_color, color = team_color2), size = 2.5) +
+  scale_color_identity() +
+  scale_fill_identity() +
+  # geom_image(aes(image = team_logo_wikipedia), size = 0.04, by = "width", asp = 1.618) +
+  geom_vline(xintercept = mean(pursuitQualityTacklesSummary$pursuitComposite)) +
+  geom_hline(yintercept = mean(pursuitQualityTacklesSummary$tackleValuePerAttempt)) +
+  # xlim(0, .1) +
+  # ylim(0, .1) +
+  facet_wrap(~ position) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+p = ggplotly(tackleVsPursuitFacet, tooltip = c('label', 'group'))
 
